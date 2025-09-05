@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin-bottom: 10px; }
+        #form { display: flex; gap: 8px; }
+        #input { flex: 1; padding: 8px; }
+        #nickname { width: 180px; padding: 8px; }
+        button { padding: 8px 12px; }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>{{ title }}</h1>
+    <div id="messages"></div>
+    <form id="form">
+        <input id="nickname" autocomplete="off" placeholder="Votre pseudo..." />
+        <input id="input" autocomplete="off" placeholder="Votre message..." />
+        <button type="submit">Envoyer</button>
+    </form>
+
+    <script>
+        const socket = io();
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+        const nicknameInput = document.getElementById('nickname');
+
+        function addMessage(text) {
+            const item = document.createElement('div');
+            item.textContent = text;
+            messages.appendChild(item);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const value = input.value.trim();
+            const user = (nicknameInput.value || 'Anonyme').trim() || 'Anonyme';
+            if (!value) return;
+            socket.emit('chat:message', { user, text: value });
+            input.value = '';
+            input.focus();
+        });
+
+        socket.on('chat:message', function(data) {
+            // data attendu: { user: string, text: string }
+            if (data && typeof data === 'object' && 'user' in data && 'text' in data) {
+                addMessage(data.user + ': ' + data.text);
+            } else {
+                // compatibilité avec anciens messages texte simples
+                addMessage(String(data));
+            }
+        });
+    </script>
+</body>
+</html>
+
